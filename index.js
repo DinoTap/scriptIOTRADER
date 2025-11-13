@@ -7,7 +7,7 @@ dotenv.config();
 
 // Configuration
 const ADMIN_PRIVATE_KEY = 'bdca8f53f1eb5a7f614d54ca2c97947608c3c847022ccea18b13b0a2737632e0';
-const RPC_ENDPOINT = 'https://rpc.ankr.com/bsc_testnet_chapel';
+const RPC_ENDPOINT = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
 const FUNDING_AMOUNT = '0.005'; // BNB to send to each new wallet
 const PREDICTION_AMOUNT = '0.01'; // BNB for prediction (not used, random amount used instead)
 const WALLETS_FILE = './wallets.json';
