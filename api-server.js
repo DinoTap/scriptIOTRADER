@@ -9,7 +9,7 @@ import { CONTRACT_ADDRESS, CHAIN_ID, RPC_URL } from './contract-config.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.API_PORT || 3000;
+const PORT = process.env.PORT || process.env.API_PORT || 8080;
 
 // Middleware
 app.use(cors());
@@ -18,24 +18,20 @@ app.use(express.json());
 // Configuration
 const ADMIN_PRIVATE_KEY = 'bdca8f53f1eb5a7f614d54ca2c97947608c3c847022ccea18b13b0a2737632e0';
 const RPC_ENDPOINT = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
-const FAUCET_AMOUNT = '0.005'; // BNB to send per claim
+const FAUCET_AMOUNT = '0.001'; // BNB to send per claim
 const CLAIMS_FILE = './faucet-claims.json';
 
-// Rate limiting: 1 request per IP per hour
+// Rate limiting disabled (no limits)
 const limiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 1, // limit each IP to 1 request per windowMs
-  message: {
-    success: false,
-    error: 'Too many requests from this IP. Please try again after 1 hour.'
-  },
-  standardHeaders: true,
+  windowMs: 60 * 60 * 1000,
+  max: 999999, // No limit
+  standardHeaders: false,
   legacyHeaders: false,
 });
 
-// Rate limiting per wallet: track wallet addresses
+// Rate limiting per wallet: disabled
 const walletClaims = new Map();
-const WALLET_COOLDOWN = 60 * 60 * 1000; // 1 hour
+const WALLET_COOLDOWN = 0; // No cooldown
 
 // Load or create claims file
 function loadClaims() {
@@ -92,7 +88,12 @@ let adminWallet;
 
 async function initializeProvider() {
   try {
-    provider = new ethers.JsonRpcProvider(RPC_ENDPOINT, undefined, {
+    // Create provider with static network to avoid ENS lookups
+    provider = new ethers.JsonRpcProvider(RPC_ENDPOINT, {
+      chainId: CHAIN_ID,
+      name: 'bsc-testnet',
+      ensAddress: null
+    }, {
       staticNetwork: true,
       batchMaxCount: 1
     });
@@ -127,8 +128,13 @@ async function initializeProvider() {
 // Validate Ethereum address
 function isValidAddress(address) {
   try {
-    return ethers.isAddress(address);
-  } catch {
+    if (!address || typeof address !== 'string') return false;
+    // ethers v6 isAddress returns true for valid addresses
+    const result = ethers.isAddress(address);
+    console.log('Address validation:', { address, result, type: typeof address });
+    return result;
+  } catch (error) {
+    console.error('Address validation error:', error);
     return false;
   }
 }
@@ -191,7 +197,9 @@ app.get('/api/faucet/info', async (req, res) => {
 // Claim BNB endpoint
 app.post('/api/faucet/claim', limiter, async (req, res) => {
   try {
-    const { address } = req.body;
+    let { address } = req.body;
+    
+    console.log('Received claim request:', { body: req.body, address });
     
     // Validate address
     if (!address) {
@@ -201,10 +209,15 @@ app.post('/api/faucet/claim', limiter, async (req, res) => {
       });
     }
     
-    if (!isValidAddress(address)) {
+    // Normalize and validate address (prevents ENS lookup)
+    try {
+      address = ethers.getAddress(address); // This validates and checksums the address
+      console.log('Normalized address:', address);
+    } catch (error) {
+      console.log('Invalid address format:', address, error.message);
       return res.status(400).json({
         success: false,
-        error: 'Invalid wallet address'
+        error: 'Invalid wallet address. Must be 42 characters (0x + 40 hex digits). Example: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
       });
     }
     
@@ -228,7 +241,7 @@ app.post('/api/faucet/claim', limiter, async (req, res) => {
       });
     }
     
-    // Check if recipient already has enough balance
+    // Check if recipient already has enough balance (use normalized address to avoid ENS)
     const recipientBalance = await provider.getBalance(address);
     if (recipientBalance > ethers.parseEther('0.1')) {
       return res.status(400).json({
@@ -240,7 +253,7 @@ app.post('/api/faucet/claim', limiter, async (req, res) => {
     console.log(`\n💸 Processing claim for ${address}`);
     console.log(`Sending ${FAUCET_AMOUNT} BNB...`);
     
-    // Send BNB
+    // Send BNB (address already normalized above)
     const tx = await adminWallet.sendTransaction({
       to: address,
       value: sendAmount
@@ -395,9 +408,9 @@ async function startServer() {
     process.exit(1);
   }
   
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log('\n✅ API Server Running!');
-    console.log(`📡 Server: http://localhost:${PORT}`);
+    console.log(`📡 Server: http://0.0.0.0:${PORT}`);
     console.log(`🌐 Health: http://localhost:${PORT}/health`);
     console.log(`💧 Faucet Info: http://localhost:${PORT}/api/faucet/info`);
     console.log(`\n💡 Endpoints:`);

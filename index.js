@@ -8,7 +8,7 @@ dotenv.config();
 // Configuration
 const ADMIN_PRIVATE_KEY = 'bdca8f53f1eb5a7f614d54ca2c97947608c3c847022ccea18b13b0a2737632e0';
 const RPC_ENDPOINT = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
-const FUNDING_AMOUNT = '0.005'; // BNB to send to each new wallet
+const FUNDING_AMOUNT = '0.001'; // BNB to send to each new wallet
 const PREDICTION_AMOUNT = '0.01'; // BNB for prediction (not used, random amount used instead)
 const WALLETS_FILE = './wallets.json';
 
@@ -216,8 +216,12 @@ async function runBot() {
     process.exit(1);
   }
   
-  // Setup provider with timeout configuration
-  const provider = new ethers.JsonRpcProvider(RPC_ENDPOINT, undefined, {
+  // Setup provider with static network to avoid ENS lookups
+  const provider = new ethers.JsonRpcProvider(RPC_ENDPOINT, {
+    chainId: CHAIN_ID,
+    name: 'bsc-testnet',
+    ensAddress: null
+  }, {
     staticNetwork: true,
     batchMaxCount: 1
   });
