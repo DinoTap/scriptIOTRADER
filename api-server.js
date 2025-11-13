@@ -17,8 +17,8 @@ app.use(express.json());
 
 // Configuration
 const ADMIN_PRIVATE_KEY = 'bdca8f53f1eb5a7f614d54ca2c97947608c3c847022ccea18b13b0a2737632e0';
-const RPC_ENDPOINT = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
-const FAUCET_AMOUNT =  '0.005'; // BNB to send per claim
+const RPC_ENDPOINT = 'https://rpc.ankr.com/bsc_testnet_chapel';
+const FAUCET_AMOUNT = '0.005'; // BNB to send per claim
 const CLAIMS_FILE = './faucet-claims.json';
 
 // Rate limiting: 1 request per IP per hour
