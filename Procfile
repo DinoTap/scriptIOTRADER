@@ -1,3 +1,2 @@
-web: node api-server.js
-bot: node index.js
+web: node start-all.js
 

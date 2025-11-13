@@ -2,6 +2,12 @@
 
 When deploying to Railway, set these environment variables in your Railway project settings.
 
+## 🚀 Single Deployment (Both API + Bot)
+
+The default `npm start` command runs BOTH services together:
+- API Server (port 3000)
+- Trading Bot (background)
+
 ## Required Environment Variables
 
 ### For API Server (Faucet)
