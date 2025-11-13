@@ -1,0 +1,28 @@
+{
+  "name": "iotrader-bot",
+  "version": "1.0.0",
+  "description": "Automated trading bot for IOTradingPlatform on Polygon Amoy Testnet",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js",
+    "api": "node api-server.js"
+  },
+  "keywords": [
+    "blockchain",
+    "trading",
+    "polygon",
+    "web3"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ethers": "^6.9.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.1.5"
+  }
+}
+
