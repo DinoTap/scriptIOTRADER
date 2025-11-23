@@ -6,7 +6,7 @@ import fs from 'fs';
 dotenv.config();
 
 // Configuration
-const ADMIN_PRIVATE_KEY = 'e78005196ae12340b1ae2ae7b0e6ee9f99e8ed0cf5f23f3870ffdd65c80f7bc7';
+const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
 const RPC_ENDPOINT = 'https://bsc-dataseed.binance.org/';
 const FUNDING_AMOUNT = '0.0001'; // BNB to send to each new wallet
 const PREDICTION_AMOUNT = '0.01'; // BNB for prediction (not used, random amount used instead)

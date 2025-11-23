@@ -16,9 +16,9 @@ app.use(cors());
 app.use(express.json());
 
 // Configuration
-const ADMIN_PRIVATE_KEY = 'bdca8f53f1eb5a7f614d54ca2c97947608c3c847022ccea18b13b0a2737632e0';
+const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
 const RPC_ENDPOINT = 'https://bsc-dataseed.binance.org/';
-const FAUCET_AMOUNT = '0.001'; // BNB to send per claim
+const FAUCET_AMOUNT = '0.0001'; // BNB to send per claim
 const CLAIMS_FILE = './faucet-claims.json';
 
 // Rate limiting disabled (no limits)
