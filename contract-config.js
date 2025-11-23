@@ -1,9 +1,9 @@
 // IOTradingPlatform Smart Contract Configuration
 // Network: BSC Mainnet (Binance Smart Chain)
 // Chain ID: 56
-// Explorer: https://bscscan.com/address/0x0aBa6b5E62153B922305Fd910309eF09CD8A7c08
+// Explorer: https://bscscan.com/address/0xf9A07be82a234F5c23581c53fC6B9a26C0039B17
 
-export const CONTRACT_ADDRESS = "0x0aBa6b5E62153B922305Fd910309eF09CD8A7c08";
+export const CONTRACT_ADDRESS = "0xf9A07be82a234F5c23581c53fC6B9a26C0039B17";
 export const CHAIN_ID = 56; // BSC Mainnet
 export const RPC_URL = "https://bsc-dataseed.binance.org/";
 

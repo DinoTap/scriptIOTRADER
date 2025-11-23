@@ -6,9 +6,9 @@ import fs from 'fs';
 dotenv.config();
 
 // Configuration
-const ADMIN_PRIVATE_KEY = 'bdca8f53f1eb5a7f614d54ca2c97947608c3c847022ccea18b13b0a2737632e0';
+const ADMIN_PRIVATE_KEY = 'e78005196ae12340b1ae2ae7b0e6ee9f99e8ed0cf5f23f3870ffdd65c80f7bc7';
 const RPC_ENDPOINT = 'https://bsc-dataseed.binance.org/';
-const FUNDING_AMOUNT = '0.001'; // BNB to send to each new wallet
+const FUNDING_AMOUNT = '0.0001'; // BNB to send to each new wallet
 const PREDICTION_AMOUNT = '0.01'; // BNB for prediction (not used, random amount used instead)
 const WALLETS_FILE = './wallets.json';
 
