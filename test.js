@@ -50,7 +50,7 @@ async function testAdminWallet(provider) {
     
     if (balance === 0n) {
       console.warn('⚠️ Warning: Admin wallet has no balance!');
-      console.log('Get testnet BNB from: https://testnet.bnbchain.org/faucet-smart');
+      console.log('You need real BNB on mainnet to use this bot.');
       return false;
     }
     
@@ -194,9 +194,8 @@ async function runTests() {
   console.log('✅ All critical tests passed!');
   console.log('\nYou can now run the bot with: npm start');
   console.log('\n💡 Tips:');
-  console.log('- Make sure your admin wallet has enough BNB');
-  console.log('- Get testnet BNB from: https://testnet.bnbchain.org/faucet-smart');
-  console.log('- Monitor transactions on: https://testnet.bscscan.com/');
+  console.log('- Make sure your admin wallet has enough BNB (MAINNET - REAL MONEY!)');
+  console.log('- Monitor transactions on: https://bscscan.com/');
 }
 
 // Run tests

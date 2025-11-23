@@ -1,11 +1,11 @@
 // IOTradingPlatform Smart Contract Configuration
-// Network: BSC Testnet (Binance Smart Chain)
-// Chain ID: 97
-// Explorer: https://testnet.bscscan.com/address/0x0aBa6b5E62153B922305Fd910309eF09CD8A7c08
+// Network: BSC Mainnet (Binance Smart Chain)
+// Chain ID: 56
+// Explorer: https://bscscan.com/address/0x0aBa6b5E62153B922305Fd910309eF09CD8A7c08
 
 export const CONTRACT_ADDRESS = "0x0aBa6b5E62153B922305Fd910309eF09CD8A7c08";
-export const CHAIN_ID = 97; // BSC Testnet
-export const RPC_URL = "https://rpc.ankr.com/bsc_testnet_chapel";
+export const CHAIN_ID = 56; // BSC Mainnet
+export const RPC_URL = "https://bsc-dataseed.binance.org/";
 
 export const CONTRACT_ABI = [
   {
@@ -452,6 +452,24 @@ export const CONTRACT_ABI = [
   {
     "inputs": [],
     "name": "withdrawFees",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_marketId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_isYes",
+        "type": "bool"
+      }
+    ],
+    "name": "withdrawMarketBet",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

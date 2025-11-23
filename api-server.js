@@ -17,7 +17,7 @@ app.use(express.json());
 
 // Configuration
 const ADMIN_PRIVATE_KEY = 'bdca8f53f1eb5a7f614d54ca2c97947608c3c847022ccea18b13b0a2737632e0';
-const RPC_ENDPOINT = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
+const RPC_ENDPOINT = 'https://bsc-dataseed.binance.org/';
 const FAUCET_AMOUNT = '0.001'; // BNB to send per claim
 const CLAIMS_FILE = './faucet-claims.json';
 
@@ -91,7 +91,7 @@ async function initializeProvider() {
     // Create provider with static network to avoid ENS lookups
     provider = new ethers.JsonRpcProvider(RPC_ENDPOINT, {
       chainId: CHAIN_ID,
-      name: 'bsc-testnet',
+      name: 'bsc-mainnet',
       ensAddress: null
     }, {
       staticNetwork: true,
@@ -163,7 +163,7 @@ app.get('/health', (req, res) => {
   res.json({
     success: true,
     status: 'online',
-    network: 'BSC Testnet',
+    network: 'BSC Mainnet',
     chainId: CHAIN_ID,
     faucetAmount: FAUCET_AMOUNT + ' BNB'
   });
@@ -177,7 +177,7 @@ app.get('/api/faucet/info', async (req, res) => {
     res.json({
       success: true,
       data: {
-        network: 'BSC Testnet',
+        network: 'BSC Mainnet',
         chainId: CHAIN_ID,
         faucetAmount: FAUCET_AMOUNT,
         faucetAddress: adminWallet.address,
@@ -293,7 +293,7 @@ app.post('/api/faucet/claim', limiter, async (req, res) => {
         amount: FAUCET_AMOUNT,
         recipient: address,
         newBalance: ethers.formatEther(newBalance),
-        explorerUrl: `https://testnet.bscscan.com/tx/${tx.hash}`
+        explorerUrl: `https://bscscan.com/tx/${tx.hash}`
       },
       message: `Successfully sent ${FAUCET_AMOUNT} BNB to your wallet!`
     });
@@ -399,7 +399,7 @@ app.get('/api/faucet/status/:address', (req, res) => {
 
 // Start server
 async function startServer() {
-  console.log('🚀 Starting BNB Testnet Faucet API...\n');
+  console.log('🚀 Starting BNB Mainnet Faucet API...\n');
   
   const initialized = await initializeProvider();
   

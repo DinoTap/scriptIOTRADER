@@ -7,7 +7,7 @@ dotenv.config();
 
 // Configuration
 const ADMIN_PRIVATE_KEY = 'bdca8f53f1eb5a7f614d54ca2c97947608c3c847022ccea18b13b0a2737632e0';
-const RPC_ENDPOINT = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
+const RPC_ENDPOINT = 'https://bsc-dataseed.binance.org/';
 const FUNDING_AMOUNT = '0.001'; // BNB to send to each new wallet
 const PREDICTION_AMOUNT = '0.01'; // BNB for prediction (not used, random amount used instead)
 const WALLETS_FILE = './wallets.json';
@@ -26,16 +26,16 @@ function getRandomInRange(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Helper function to get random time between 10-30 minutes in milliseconds
+// Helper function to get random time between 40-50 minutes in milliseconds
 function getRandomInterval() {
-  const minutes = getRandomInRange(10, 30);
+  const minutes = getRandomInRange(40, 50);
   return minutes * 60 * 1000;
 }
 
-// Helper function to get random amount between 0.0001 and 0.0005 BNB
+// Helper function to get random amount between 0.00001 and 0.00002 BNB
 function getRandomAmount() {
-  const min = 0.0001;
-  const max = 0.0005;
+  const min = 0.00001;
+  const max = 0.00002;
   const random = Math.random() * (max - min) + min;
   return random.toFixed(6); // Return as string with 6 decimals
 }
@@ -204,11 +204,11 @@ async function createPricePrediction(provider, walletPrivateKey) {
 // Main loop function
 async function runBot() {
   console.log('🤖 IOTrader Bot Starting...');
-  console.log('Network: BSC Testnet (Binance Smart Chain)');
+  console.log('Network: BSC Mainnet (Binance Smart Chain)');
   console.log('Chain ID:', CHAIN_ID);
   console.log('Contract:', CONTRACT_ADDRESS);
-  console.log(`Interval: Random 10-30 minutes`);
-  console.log(`Bet Amount: Random 0.0001-0.0005 BNB\n`);
+  console.log(`Interval: Random 40-50 minutes`);
+  console.log(`Bet Amount: Random 0.00001-0.00002 BNB\n`);
   
   // Validate admin private key
   if (!ADMIN_PRIVATE_KEY || ADMIN_PRIVATE_KEY === 'your_admin_wallet_private_key_here') {
@@ -219,7 +219,7 @@ async function runBot() {
   // Setup provider with static network to avoid ENS lookups
   const provider = new ethers.JsonRpcProvider(RPC_ENDPOINT, {
     chainId: CHAIN_ID,
-    name: 'bsc-testnet',
+    name: 'bsc-mainnet',
     ensAddress: null
   }, {
     staticNetwork: true,
