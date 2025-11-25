@@ -3,7 +3,7 @@
 // Chain ID: 56
 // Explorer: https://bscscan.com/address/0x8eE7943D72779F4Af08260aF3e688e001047D781
 
-export const CONTRACT_ADDRESS = "0x8eE7943D72779F4Af08260aF3e688e001047D781";
+export const CONTRACT_ADDRESS = "0x78756ef9d55d58ef9F7B2Ec8A41bd989Ac73ABa2";
 export const CHAIN_ID = 56; // BSC Mainnet
 export const RPC_URL = "https://bsc-dataseed.binance.org/";
 
