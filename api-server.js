@@ -99,6 +99,7 @@ async function checkWalletInFirestore(walletAddress) {
     // Query Firestore users collection for this wallet address
     const usersRef = firestore.collection(FIREBASE_COLLECTION);
     
+    
     // Search for documents where address field matches (case-insensitive)
     // Try lowercase first
     const snapshot = await usersRef
