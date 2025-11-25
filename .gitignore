@@ -3,4 +3,6 @@ node_modules/
 *.log
 wallets.json
 faucet-claims.json
+*-firebase-adminsdk-*.json
+firebase-service-account.json
 

@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { ethers } from 'ethers';
 import dotenv from 'dotenv';
 import fs from 'fs';
+import admin from 'firebase-admin';
 import { CONTRACT_ADDRESS, CHAIN_ID, RPC_URL } from './contract-config.js';
 
 dotenv.config();
@@ -16,6 +17,48 @@ const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
 const RPC_ENDPOINT = 'https://bsc-dataseed.binance.org/';
 const FAUCET_AMOUNT = '0.0001'; // BNB to send per claim
 const CLAIMS_FILE = './faucet-claims.json';
+
+// Firebase Configuration
+const FIREBASE_PROJECT_ID = 'iotrade-9840d';
+const FIREBASE_COLLECTION = 'users'; // Collection name in Firestore
+
+// Initialize Firebase Admin SDK
+let firestore;
+try {
+  // Option 1: Use service account key from environment variable (recommended for Railway)
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: FIREBASE_PROJECT_ID
+    });
+    firestore = admin.firestore();
+    console.log('✅ Firebase Admin SDK initialized with service account key from environment variable');
+  } 
+  // Option 2: Use service account JSON file (for local development)
+  else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH || fs.existsSync('./iotrade-9840d-firebase-adminsdk-fbsvc-fb18a46d05.json')) {
+    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './iotrade-9840d-firebase-adminsdk-fbsvc-fb18a46d05.json';
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: FIREBASE_PROJECT_ID
+    });
+    firestore = admin.firestore();
+    console.log('✅ Firebase Admin SDK initialized with service account file:', serviceAccountPath);
+  }
+  // Option 3: Use default credentials (for local development with gcloud)
+  else {
+    admin.initializeApp({
+      projectId: FIREBASE_PROJECT_ID
+    });
+    firestore = admin.firestore();
+    console.log('✅ Firebase Admin SDK initialized with default credentials');
+  }
+} catch (error) {
+  console.log('⚠️ Firebase initialization error:', error.message);
+  console.log('⚠️ Claims will be allowed without Firestore verification');
+  firestore = null;
+}
 
 // Security Configuration - Only allow requests from iotrader.io
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
@@ -58,6 +101,49 @@ const limiter = rateLimit({
 // Rate limiting per wallet: 1 hour cooldown
 const walletClaims = new Map();
 const WALLET_COOLDOWN = 60 * 60 * 1000; // 1 hour in milliseconds
+
+// Check if wallet exists in Firestore users collection
+async function checkWalletInFirestore(walletAddress) {
+  if (!firestore) {
+    // If Firebase is not initialized, allow the claim (fallback mode)
+    console.log('⚠️ Firestore not initialized, allowing claim without verification');
+    return true;
+  }
+  
+  try {
+    // Normalize wallet address to lowercase for comparison
+    const normalizedAddress = walletAddress.toLowerCase();
+    
+    // Query Firestore users collection for this wallet address
+    const usersRef = firestore.collection(FIREBASE_COLLECTION);
+    
+    // Search for documents where wallet field matches (case-insensitive)
+    const snapshot = await usersRef
+      .where('wallet', '==', normalizedAddress)
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      // Also try searching with case-sensitive original address
+      const snapshot2 = await usersRef
+        .where('wallet', '==', walletAddress)
+        .limit(1)
+        .get();
+      
+      if (snapshot2.empty) {
+        console.log(`❌ Wallet ${walletAddress} not found in Firestore users collection`);
+        return false;
+      }
+    }
+    
+    console.log(`✅ Wallet ${walletAddress} found in Firestore users collection`);
+    return true;
+  } catch (error) {
+    console.log('❌ Error checking Firestore:', error.message);
+    // On error, allow the claim (fail-open for availability)
+    return true;
+  }
+}
 
 // Load or create claims file
 function loadClaims() {
@@ -241,6 +327,15 @@ app.post('/api/faucet/claim', limiter, async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Invalid wallet address. Must be 42 characters (0x + 40 hex digits). Example: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0'
+      });
+    }
+    
+    // Check if wallet exists in Firestore users collection
+    const walletExists = await checkWalletInFirestore(address);
+    if (!walletExists) {
+      return res.status(403).json({
+        success: false,
+        error: 'Wallet address not found in registered users. Please register your wallet first on iotrader.io'
       });
     }
     
@@ -445,6 +540,8 @@ async function startServer() {
     console.log(`\n🔒 Security:`);
     console.log(`   CORS Protection: ✅ ENABLED`);
     console.log(`   Allowed Origins: ${ALLOWED_ORIGINS.join(', ')}`);
+    console.log(`   Firebase Firestore: ${firestore ? '✅ CONNECTED' : '⚠️  NOT CONNECTED'}`);
+    console.log(`   Firestore Collection: ${FIREBASE_COLLECTION}`);
     console.log(`   Rate Limit: 5 claims per IP per hour`);
     console.log(`   Wallet Cooldown: 1 hour between claims`);
     console.log(`📝 Claims saved to: ${CLAIMS_FILE}\n`);
