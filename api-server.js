@@ -11,27 +11,53 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || process.env.API_PORT || 8080;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
 // Configuration
 const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
 const RPC_ENDPOINT = 'https://bsc-dataseed.binance.org/';
 const FAUCET_AMOUNT = '0.0001'; // BNB to send per claim
 const CLAIMS_FILE = './faucet-claims.json';
 
-// Rate limiting disabled (no limits)
+// Security Configuration - Only allow requests from iotrader.io
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : ['https://iotrader.io', 'https://www.iotrader.io'];
+
+// CORS Configuration - Strictly only allow requests from iotrader.io
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Block requests with no origin (Postman, curl, etc.)
+    if (!origin) {
+      return callback(new Error('Not allowed by CORS - Origin header required'));
+    }
+    
+    // Only allow requests from iotrader.io domains
+    if (ALLOWED_ORIGINS.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Not allowed by CORS - Only ${ALLOWED_ORIGINS.join(', ')} are allowed`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+// Middleware
+app.use(cors(corsOptions));
+app.use(express.json());
+
+// Rate limiting: 5 requests per hour per IP
 const limiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 999999, // No limit
-  standardHeaders: false,
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 requests per hour
+  standardHeaders: true,
   legacyHeaders: false,
+  message: 'Too many requests from this IP, please try again later.'
 });
 
-// Rate limiting per wallet: disabled
+// Rate limiting per wallet: 1 hour cooldown
 const walletClaims = new Map();
-const WALLET_COOLDOWN = 0; // No cooldown
+const WALLET_COOLDOWN = 60 * 60 * 1000; // 1 hour in milliseconds
 
 // Load or create claims file
 function loadClaims() {
@@ -166,7 +192,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Get faucet info
+// Get faucet info - Public endpoint (no auth needed)
 app.get('/api/faucet/info', async (req, res) => {
   try {
     const balance = await provider.getBalance(adminWallet.address);
@@ -191,7 +217,7 @@ app.get('/api/faucet/info', async (req, res) => {
   }
 });
 
-// Claim BNB endpoint
+// Claim BNB endpoint - Protected with CORS (only iotrader.io) and rate limiting
 app.post('/api/faucet/claim', limiter, async (req, res) => {
   try {
     let { address } = req.body;
@@ -416,8 +442,11 @@ async function startServer() {
     console.log(`   GET  /api/faucet/info - Get faucet information`);
     console.log(`   GET  /api/faucet/claims - Get all claims history`);
     console.log(`   GET  /api/airdrop/list - Get airdrop eligible addresses`);
-    console.log(`\n⏱️  Rate Limit: 1 claim per IP per hour`);
-    console.log(`⏱️  Wallet Cooldown: 1 hour between claims`);
+    console.log(`\n🔒 Security:`);
+    console.log(`   CORS Protection: ✅ ENABLED`);
+    console.log(`   Allowed Origins: ${ALLOWED_ORIGINS.join(', ')}`);
+    console.log(`   Rate Limit: 5 claims per IP per hour`);
+    console.log(`   Wallet Cooldown: 1 hour between claims`);
     console.log(`📝 Claims saved to: ${CLAIMS_FILE}\n`);
   });
 }
