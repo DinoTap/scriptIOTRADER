@@ -40,7 +40,6 @@ function loadClaims() {
       const data = fs.readFileSync(CLAIMS_FILE, 'utf8');
       return JSON.parse(data);
     } catch (error) {
-      console.error('Error loading claims file:', error.message);
       return { claims: [], totalClaims: 0, totalDistributed: '0' };
     }
   }
@@ -65,7 +64,6 @@ function saveClaim(claimData) {
     console.log('✅ Claim saved to', CLAIMS_FILE);
     return true;
   } catch (error) {
-    console.error('❌ Error saving claim:', error.message);
     return false;
   }
 }
@@ -120,7 +118,7 @@ async function initializeProvider() {
     
     return true;
   } catch (error) {
-    console.error('❌ Failed to initialize provider:', error.message);
+    console.log('❌ Failed to initialize provider:', error.message);
     return false;
   }
 }
@@ -134,7 +132,6 @@ function isValidAddress(address) {
     console.log('Address validation:', { address, result, type: typeof address });
     return result;
   } catch (error) {
-    console.error('Address validation error:', error);
     return false;
   }
 }
@@ -299,7 +296,7 @@ app.post('/api/faucet/claim', limiter, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Error processing claim:', error.message);
+    console.log('❌ Error processing claim:', error.message);
     
     res.status(500).json({
       success: false,
@@ -404,7 +401,7 @@ async function startServer() {
   const initialized = await initializeProvider();
   
   if (!initialized) {
-    console.error('Failed to initialize. Please check your configuration.');
+    console.log('Failed to initialize. Please check your configuration.');
     process.exit(1);
   }
   
@@ -433,7 +430,7 @@ process.on('SIGINT', () => {
 
 // Start the server
 startServer().catch(error => {
-  console.error('💥 Fatal error:', error);
+  console.log('💥 Fatal error:', error);
   process.exit(1);
 });
 

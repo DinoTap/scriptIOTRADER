@@ -30,7 +30,7 @@ setTimeout(() => {
   });
 
   bot.on('error', (error) => {
-    console.error('❌ Bot Error:', error);
+    console.log('❌ Bot Error:', error);
   });
 
   bot.on('exit', (code, signal) => {
@@ -41,7 +41,7 @@ setTimeout(() => {
 }, 5000); // Wait 5 seconds for API to initialize
 
 apiServer.on('error', (error) => {
-  console.error('❌ API Server Error:', error);
+  console.log('❌ API Server Error:', error);
 });
 
 apiServer.on('exit', (code, signal) => {

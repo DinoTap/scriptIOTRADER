@@ -22,13 +22,13 @@ async function testConnection() {
     console.log('Chain ID:', network.chainId.toString());
     
     if (network.chainId !== BigInt(CHAIN_ID)) {
-      console.error(`❌ Wrong network! Expected ${CHAIN_ID}, got ${network.chainId}`);
+      console.log(`❌ Wrong network! Expected ${CHAIN_ID}, got ${network.chainId}`);
       return false;
     }
     
     return provider;
   } catch (error) {
-    console.error('❌ Connection failed:', error.message);
+    console.log('❌ Connection failed:', error.message);
     return false;
   }
 }
@@ -37,7 +37,7 @@ async function testAdminWallet(provider) {
   console.log('\n🧪 Testing Admin Wallet...\n');
   
   if (!ADMIN_PRIVATE_KEY || ADMIN_PRIVATE_KEY === 'your_admin_wallet_private_key_here') {
-    console.error('❌ Please set ADMIN_PRIVATE_KEY in .env file');
+    console.log('❌ Please set ADMIN_PRIVATE_KEY in .env file');
     return false;
   }
   
@@ -56,7 +56,7 @@ async function testAdminWallet(provider) {
     
     return adminWallet;
   } catch (error) {
-    console.error('❌ Admin wallet error:', error.message);
+    console.log('❌ Admin wallet error:', error.message);
     return false;
   }
 }
@@ -91,7 +91,7 @@ async function testContract(provider) {
     
     return contract;
   } catch (error) {
-    console.error('❌ Contract error:', error.message);
+    console.log('❌ Contract error:', error.message);
     return false;
   }
 }
@@ -103,12 +103,11 @@ async function testWalletGeneration() {
     const wallet = ethers.Wallet.createRandom();
     console.log('✅ New Wallet Generated:');
     console.log('Address:', wallet.address);
-    console.log('Private Key:', wallet.privateKey);
-    console.log('Mnemonic:', wallet.mnemonic.phrase);
+    // Note: Private key and mnemonic not logged for security in production
     
     return wallet;
   } catch (error) {
-    console.error('❌ Wallet generation error:', error.message);
+    console.log('❌ Wallet generation error:', error.message);
     return false;
   }
 }
@@ -126,7 +125,7 @@ async function testFunding(provider, adminWallet) {
     const fundingAmount = ethers.parseEther('0.01'); // Small test amount
     
     if (adminBalance < fundingAmount) {
-      console.error('❌ Insufficient admin balance for test');
+      console.log('❌ Insufficient admin balance for test');
       return false;
     }
     
@@ -149,7 +148,7 @@ async function testFunding(provider, adminWallet) {
     
     return true;
   } catch (error) {
-    console.error('❌ Funding test error:', error.message);
+    console.log('❌ Funding test error:', error.message);
     return false;
   }
 }
@@ -200,7 +199,7 @@ async function runTests() {
 
 // Run tests
 runTests().catch(error => {
-  console.error('💥 Test failed:', error);
+  console.log('💥 Test failed:', error);
   process.exit(1);
 });
 

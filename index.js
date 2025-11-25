@@ -59,7 +59,7 @@ function generateWallet() {
   const wallet = ethers.Wallet.createRandom();
   console.log('\n🔐 New Wallet Generated:');
   console.log('Address:', wallet.address);
-  console.log('Private Key:', wallet.privateKey);
+  // Note: Private key is saved to wallets.json but not logged for security
   return {
     address: wallet.address,
     privateKey: wallet.privateKey,
@@ -101,7 +101,6 @@ async function fundWallet(provider, newWalletAddress) {
     
     return receipt;
   } catch (error) {
-    console.error('❌ Error funding wallet:', error.message);
     throw error;
   }
 }
@@ -193,10 +192,6 @@ async function createPricePrediction(provider, walletPrivateKey) {
       timestamp: new Date().toISOString()
     };
   } catch (error) {
-    console.error('❌ Error creating prediction:', error.message);
-    if (error.data) {
-      console.error('Error data:', error.data);
-    }
     throw error;
   }
 }
@@ -212,7 +207,7 @@ async function runBot() {
   
   // Validate admin private key
   if (!ADMIN_PRIVATE_KEY || ADMIN_PRIVATE_KEY === 'your_admin_wallet_private_key_here') {
-    console.error('❌ Please set ADMIN_PRIVATE_KEY in .env file');
+    console.log('❌ Please set ADMIN_PRIVATE_KEY in .env file');
     process.exit(1);
   }
   
@@ -232,11 +227,11 @@ async function runBot() {
     console.log('✅ Connected to network:', network.name, '- Chain ID:', network.chainId.toString());
     
     if (network.chainId !== BigInt(CHAIN_ID)) {
-      console.error(`❌ Wrong network! Expected Chain ID ${CHAIN_ID}, got ${network.chainId}`);
+      console.log(`❌ Wrong network! Expected Chain ID ${CHAIN_ID}, got ${network.chainId}`);
       process.exit(1);
     }
   } catch (error) {
-    console.error('❌ Failed to connect to network:', error.message);
+    console.log('❌ Failed to connect to network:', error.message);
     process.exit(1);
   }
   
@@ -277,8 +272,8 @@ async function runBot() {
       console.log(`Total transactions: ${transactionCount}`);
       
     } catch (error) {
-      console.error('\n❌ Error in transaction cycle:', error.message);
-      console.error('Will retry in next interval...');
+      console.log('\n❌ Error in transaction cycle:', error.message);
+      console.log('Will retry in next interval...');
     }
   }
   
@@ -310,7 +305,7 @@ process.on('SIGINT', () => {
 
 // Start the bot
 runBot().catch(error => {
-  console.error('💥 Fatal error:', error);
+  console.log('💥 Fatal error:', error);
   process.exit(1);
 });
 
