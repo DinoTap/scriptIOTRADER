@@ -35,25 +35,7 @@ try {
     firestore = admin.firestore();
     console.log('✅ Firebase Admin SDK initialized with service account key from environment variable');
   } 
-  // Option 2: Use service account JSON file (for local development)
-  else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH || fs.existsSync('./iotrade-9840d-firebase-adminsdk-fbsvc-fb18a46d05.json')) {
-    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './iotrade-9840d-firebase-adminsdk-fbsvc-fb18a46d05.json';
-    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: FIREBASE_PROJECT_ID
-    });
-    firestore = admin.firestore();
-    console.log('✅ Firebase Admin SDK initialized with service account file:', serviceAccountPath);
-  }
-  // Option 3: Use default credentials (for local development with gcloud)
-  else {
-    admin.initializeApp({
-      projectId: FIREBASE_PROJECT_ID
-    });
-    firestore = admin.firestore();
-    console.log('✅ Firebase Admin SDK initialized with default credentials');
-  }
+
 } catch (error) {
   console.log('⚠️ Firebase initialization error:', error.message);
   console.log('⚠️ Claims will be allowed without Firestore verification');
