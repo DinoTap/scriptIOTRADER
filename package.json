@@ -1,0 +1,20 @@
+{
+  "name": "autotrade-script",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone runner for IOTrader long/short automation",
+  "main": "autoTrade.js",
+  "scripts": {
+    "trade": "node autoTrade.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-fetch": "^3.3.2",
+    "viem": "^2.41.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=10.0.0"
+  }
+}
