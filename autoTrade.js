@@ -179,27 +179,28 @@ async function tradeOnce(traderWallet, stakeWei, isLong, index) {
 }
 
 async function main() {
-  const traderAccount = privateKeyToAccount(generatePrivateKey());
-  log("Generated trader wallet:", traderAccount.address);
-  log(
-    "⚠️ Save this private key securely:",
-    traderAccount?.privateKey ?? "(unavailable)",
-    "(do not share)"
-  );
-
-  // Step 2: Create trader wallet client
-  const traderWallet = createWalletClient({
-    account: traderAccount,
-    chain: bsc,
-    transport: http(RPC_URL),
-  });
-
-  // Step 3: Execute trades continuously (or up to MAX_TX)
+  // Execute trades continuously (or up to MAX_TX)
   const intervalMs = Number(TX_INTERVAL_SECONDS) * 1000;
   const maxTx = Number(MAX_TX || "0");
   let i = 0;
 
   while (true) {
+    // Generate a new wallet for each transaction
+    const traderAccount = privateKeyToAccount(generatePrivateKey());
+    log(`TX ${i + 1}: Generated new trader wallet:`, traderAccount.address);
+    log(
+      "⚠️ Private key:",
+      traderAccount?.privateKey ?? "(unavailable)",
+      "(do not share)"
+    );
+
+    // Create wallet client for this transaction
+    const traderWallet = createWalletClient({
+      account: traderAccount,
+      chain: bsc,
+      transport: http(RPC_URL),
+    });
+
     const stakeWei = computeStakeWei();
     const isLong = i % 2 === 0; // alternate long/short
     await tradeOnce(traderWallet, stakeWei, isLong, i);
