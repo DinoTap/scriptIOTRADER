@@ -55,9 +55,10 @@ const {
   RPC_URL = "https://bsc-dataseed.binance.org",
   TARGET_PRICE = "600", // Example price; set to your desired strike
   DURATION_SECONDS = "3600", // 1 hour
-  BNB_STAKE = "0.00001", // Base minimum stake; will randomize up to 0.00002
-  TX_INTERVAL_SECONDS = "1200", // 20 minutes between tx to fit 3 tx in ~1 hour
-  MAX_TX = "0", // 0 or empty = run continuously
+  MIN_BNB_STAKE = "0.0012", // minimum stake in BNB
+  MAX_BNB_STAKE = "0.004", // maximum stake in BNB
+  TX_INTERVAL_SECONDS = "1200", // base interval (avg ~3 tx per hour)
+  MAX_TX = "3", // default 3 trades, override if needed
 } = process.env;
 
 if (!ADMIN_PRIVATE_KEY) {
@@ -86,12 +87,15 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const log = (...args) => console.log(new Date().toISOString(), "-", ...args);
 
-// Randomize stake between base and base*2 to vary 0.00001 -> 0.00002
+// Randomize stake between MIN_BNB_STAKE and MAX_BNB_STAKE
 const computeStakeWei = () => {
-  const base = parseEther(BNB_STAKE);
-  const multiplier = 1 + Math.random(); // 1.0 to <2.0
-  const randomized = BigInt(Math.floor(Number(base) * multiplier));
-  return randomized;
+  const min = parseEther(MIN_BNB_STAKE);
+  const max = parseEther(MAX_BNB_STAKE);
+  if (max <= min) return min;
+
+  const range = max - min;
+  const rand = BigInt(Math.floor(Math.random() * Number(range + 1n)));
+  return min + rand;
 };
 
 async function fundTrader(traderAddress, amountWei) {
@@ -180,7 +184,7 @@ async function tradeOnce(traderWallet, stakeWei, isLong, index) {
 
 async function main() {
   // Execute trades continuously (or up to MAX_TX)
-  const intervalMs = Number(TX_INTERVAL_SECONDS) * 1000;
+  const baseIntervalMs = Number(TX_INTERVAL_SECONDS) * 1000;
   const maxTx = Number(MAX_TX || "0");
   let i = 0;
 
@@ -202,7 +206,7 @@ async function main() {
     });
 
     const stakeWei = computeStakeWei();
-    const isLong = i % 2 === 0; // alternate long/short
+    const isLong = Math.random() < 0.5; // random long or short
     await tradeOnce(traderWallet, stakeWei, isLong, i);
 
     i += 1;
@@ -211,7 +215,10 @@ async function main() {
       break;
     }
 
-    log(`Sleeping ${intervalMs / 1000} seconds before next tx...`);
+    // Jitter the interval so trades are at random times, ~3 per hour
+    const jitterFactor = 0.5 + Math.random(); // 0.5x to 1.5x
+    const intervalMs = baseIntervalMs * jitterFactor;
+    log(`Sleeping ${(intervalMs / 1000).toFixed(0)} seconds before next tx...`);
     await sleep(intervalMs);
   }
 
