@@ -56,7 +56,7 @@ const {
   TARGET_PRICE = "600", // Example price; set to your desired strike
   DURATION_SECONDS = "3600", // 1 hour
   MIN_BNB_STAKE = "0.0012", // minimum stake in BNB
-  MAX_BNB_STAKE = "0.004", // maximum stake in BNB
+  MAX_BNB_STAKE = "0.0025", // maximum stake in BNB
   TX_INTERVAL_SECONDS = "1200", // base interval (avg ~3 tx per hour)
   MAX_TX = "3", // default 3 trades, override if needed
 } = process.env;
