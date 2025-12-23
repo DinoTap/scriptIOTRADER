@@ -56,9 +56,8 @@ const {
   TARGET_PRICE = "600", // Example price; set to your desired strike
   DURATION_SECONDS = "3600", // 1 hour
   MIN_BNB_STAKE = "0.0012", // minimum stake in BNB
-  MAX_BNB_STAKE = "0.0025", // maximum stake in BNB
+  MAX_BNB_STAKE = "0.0019", // maximum stake in BNB
   TX_INTERVAL_SECONDS = "1200", // base interval (avg ~3 tx per hour)
-  MAX_TX = "3", // default 3 trades, override if needed
 } = process.env;
 
 if (!ADMIN_PRIVATE_KEY) {
@@ -183,9 +182,8 @@ async function tradeOnce(traderWallet, stakeWei, isLong, index) {
 }
 
 async function main() {
-  // Execute trades continuously (or up to MAX_TX)
+  // Execute trades continuously forever (~3 tx per hour)
   const baseIntervalMs = Number(TX_INTERVAL_SECONDS) * 1000;
-  const maxTx = Number(MAX_TX || "0");
   let i = 0;
 
   while (true) {
@@ -210,10 +208,6 @@ async function main() {
     await tradeOnce(traderWallet, stakeWei, isLong, i);
 
     i += 1;
-    if (maxTx > 0 && i >= maxTx) {
-      log(`Reached MAX_TX=${maxTx}. Exiting.`);
-      break;
-    }
 
     // Jitter the interval so trades are at random times, ~3 per hour
     const jitterFactor = 0.5 + Math.random(); // 0.5x to 1.5x
@@ -221,8 +215,6 @@ async function main() {
     log(`Sleeping ${(intervalMs / 1000).toFixed(0)} seconds before next tx...`);
     await sleep(intervalMs);
   }
-
-  log("All transactions submitted and confirmed.");
 }
 
 main().catch((err) => {
