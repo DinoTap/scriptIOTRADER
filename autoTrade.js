@@ -55,8 +55,8 @@ const {
   RPC_URL = "https://bsc-dataseed.binance.org",
   TARGET_PRICE = "600", // Example price; set to your desired strike
   DURATION_SECONDS = "3600", // 1 hour
-  MIN_BNB_STAKE = "0.0012", // minimum stake in BNB
-  MAX_BNB_STAKE = "0.0019", // maximum stake in BNB
+  MIN_BNB_STAKE = "0.0002", // minimum stake in BNB
+  MAX_BNB_STAKE = "0.0009", // maximum stake in BNB
   TX_INTERVAL_SECONDS = "3600", // base interval (1 transaction per hour)
 } = process.env;
 
