@@ -57,7 +57,7 @@ const {
   DURATION_SECONDS = "3600", // 1 hour
   MIN_BNB_STAKE = "0.0002", // minimum stake in BNB
   MAX_BNB_STAKE = "0.0009", // maximum stake in BNB
-  TX_INTERVAL_SECONDS = "1200", // base interval (3 transactions per hour, ~20 minutes each)
+  TX_INTERVAL_SECONDS = "36", // base interval (10 transactions in 6 minutes, ~36 seconds each)
 } = process.env;
 
 if (!ADMIN_PRIVATE_KEY) {
@@ -182,11 +182,12 @@ async function tradeOnce(traderWallet, stakeWei, isLong, index) {
 }
 
 async function main() {
-  // Execute trades continuously forever (3 transactions per hour)
+  // Execute exactly 10 transactions in 6 minutes, then stop
+  const TOTAL_TRANSACTIONS = 10;
   const baseIntervalMs = Number(TX_INTERVAL_SECONDS) * 1000;
   let i = 0;
 
-  while (true) {
+  while (i < TOTAL_TRANSACTIONS) {
     // Generate a new wallet for each transaction
     const traderAccount = privateKeyToAccount(generatePrivateKey());
     log(`TX ${i + 1}: Generated new trader wallet:`, traderAccount.address);
@@ -209,12 +210,17 @@ async function main() {
 
     i += 1;
 
-    // Jitter the interval so trades are at random times, approximately 3 per hour
-    const jitterFactor = 0.5 + Math.random(); // 0.5x to 1.5x
-    const intervalMs = baseIntervalMs * jitterFactor;
-    log(`Sleeping ${(intervalMs / 1000).toFixed(0)} seconds before next tx...`);
-    await sleep(intervalMs);
+    // Don't sleep after the last transaction
+    if (i < TOTAL_TRANSACTIONS) {
+      // Jitter the interval so trades are at random times, approximately 10 in 6 minutes
+      const jitterFactor = 0.5 + Math.random(); // 0.5x to 1.5x
+      const intervalMs = baseIntervalMs * jitterFactor;
+      log(`Sleeping ${(intervalMs / 1000).toFixed(0)} seconds before next tx...`);
+      await sleep(intervalMs);
+    }
   }
+  
+  log(`Completed ${TOTAL_TRANSACTIONS} transactions. Stopping.`);
 }
 
 main().catch((err) => {
