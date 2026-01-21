@@ -57,7 +57,7 @@ const {
   DURATION_SECONDS = "3600", // 1 hour
   MIN_BNB_STAKE = "0.0002", // minimum stake in BNB
   MAX_BNB_STAKE = "0.0009", // maximum stake in BNB
-  TX_INTERVAL_SECONDS = "1800", // base interval (2 transactions per hour, ~30 minutes each)
+  TX_INTERVAL_SECONDS = "3600", // base interval (1 transaction per hour)
 } = process.env;
 
 if (!ADMIN_PRIVATE_KEY) {
@@ -182,7 +182,7 @@ async function tradeOnce(traderWallet, stakeWei, isLong, index) {
 }
 
 async function main() {
-  // Execute trades continuously forever (2 transactions per hour)
+  // Execute trades continuously forever (1 transaction per hour)
   const baseIntervalMs = Number(TX_INTERVAL_SECONDS) * 1000;
   let i = 0;
 
@@ -209,7 +209,7 @@ async function main() {
 
     i += 1;
 
-    // Jitter the interval so trades are at random times, approximately 2 per hour
+    // Jitter the interval so trades are at random times, approximately 1 per hour
     const jitterFactor = 0.5 + Math.random(); // 0.5x to 1.5x
     const intervalMs = baseIntervalMs * jitterFactor;
     log(`Sleeping ${(intervalMs / 1000).toFixed(0)} seconds before next tx...`);
