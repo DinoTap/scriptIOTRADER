@@ -7,7 +7,7 @@ import {
   parseUnits,
 } from "viem";
 import { bsc } from "viem/chains";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount } from "viem/accounts";
 import fetch, { Headers, Request, Response } from "node-fetch";
 
 // Polyfill fetch for Node versions without global fetch (needed by viem)
@@ -51,6 +51,8 @@ const CONTRACT_ABI = [
 const CONTRACT_ADDRESS = "0x1b3f2f99cc5eaD46084075751372F9dE9133f18e";
 
 const {
+  WALLET1_PRIVATE_KEY,
+  WALLET2_PRIVATE_KEY,
   ADMIN_PRIVATE_KEY,
   RPC_URL = "https://bsc-dataseed.binance.org",
   TARGET_PRICE = "600", // Example price; set to your desired strike
@@ -60,8 +62,12 @@ const {
   TX_INTERVAL_SECONDS = "3600", // base interval (1 transaction per hour)
 } = process.env;
 
+if (!WALLET1_PRIVATE_KEY || !WALLET2_PRIVATE_KEY) {
+  throw new Error("Set WALLET1_PRIVATE_KEY and WALLET2_PRIVATE_KEY in .env");
+}
+
 if (!ADMIN_PRIVATE_KEY) {
-  throw new Error("Set ADMIN_PRIVATE_KEY in .env to fund the child wallet.");
+  throw new Error("Set ADMIN_PRIVATE_KEY in .env to fund the wallets.");
 }
 
 // Pair enum from the dapp (0=BTC, 1=ETH, 2=BNB, 3=USDT). Using BNB here.
@@ -78,6 +84,27 @@ const adminAccount = privateKeyToAccount(
 
 const adminWallet = createWalletClient({
   account: adminAccount,
+  chain: bsc,
+  transport: http(RPC_URL),
+});
+
+// Create two wallet accounts from private keys
+const wallet1Account = privateKeyToAccount(
+  `0x${WALLET1_PRIVATE_KEY.replace(/^0x/, "")}`
+);
+const wallet2Account = privateKeyToAccount(
+  `0x${WALLET2_PRIVATE_KEY.replace(/^0x/, "")}`
+);
+
+// Create wallet clients for both wallets
+const wallet1 = createWalletClient({
+  account: wallet1Account,
+  chain: bsc,
+  transport: http(RPC_URL),
+});
+
+const wallet2 = createWalletClient({
+  account: wallet2Account,
   chain: bsc,
   transport: http(RPC_URL),
 });
@@ -124,6 +151,25 @@ async function ensureFunding(traderAddress, requiredWei) {
   });
   await publicClient.waitForTransactionReceipt({ hash });
   log("Top-up confirmed:", hash);
+}
+
+async function checkAndFundWallet(walletAddress, walletName, requiredWei) {
+  const balance = await publicClient.getBalance({ address: walletAddress });
+  const balanceBNB = Number(balance) / 1e18;
+  log(`${walletName} balance: ${balanceBNB.toFixed(6)} BNB (${balance} wei)`);
+  
+  if (balance < requiredWei) {
+    const delta = requiredWei - balance;
+    const deltaBNB = Number(delta) / 1e18;
+    log(`  ⚠️  Insufficient balance. Need ${deltaBNB.toFixed(6)} BNB more. Funding...`);
+    await ensureFunding(walletAddress, requiredWei);
+    const newBalance = await publicClient.getBalance({ address: walletAddress });
+    const newBalanceBNB = Number(newBalance) / 1e18;
+    log(`  ✅ Funded. New balance: ${newBalanceBNB.toFixed(6)} BNB`);
+  } else {
+    log(`  ✅ Sufficient balance`);
+  }
+  return balance;
 }
 
 async function tradeOnce(traderWallet, stakeWei, isLong, index) {
@@ -182,38 +228,99 @@ async function tradeOnce(traderWallet, stakeWei, isLong, index) {
 }
 
 async function main() {
-  // Execute trades continuously forever (1 transaction per hour)
+  // Execute trades continuously forever, alternating between wallets every hour
   const baseIntervalMs = Number(TX_INTERVAL_SECONDS) * 1000;
   let i = 0;
+  let useWallet1 = true; // Start with wallet 1
+
+  log(`Wallet 1 address: ${wallet1Account.address}`);
+  log(`Wallet 2 address: ${wallet2Account.address}`);
+  log("=".repeat(60));
+  
+  // Calculate minimum required balance (max stake + gas estimate)
+  const gasPrice = await publicClient.getGasPrice();
+  const maxStakeWei = parseEther(MAX_BNB_STAKE);
+  const estimatedGas = 400_000n; // Conservative estimate
+  const gasCost = gasPrice * estimatedGas;
+  const gasBuffer = (gasCost * 10n) / 100n; // 10% buffer
+  const minRequiredWei = maxStakeWei + gasCost + gasBuffer;
+  const minRequiredBNB = Number(minRequiredWei) / 1e18;
+  
+  log(`Checking wallet balances (minimum required: ${minRequiredBNB.toFixed(6)} BNB)...`);
+  log("=".repeat(60));
+  
+  // Check and fund both wallets at startup
+  const balance1 = await checkAndFundWallet(
+    wallet1Account.address,
+    "Wallet 1",
+    minRequiredWei
+  );
+  const balance2 = await checkAndFundWallet(
+    wallet2Account.address,
+    "Wallet 2",
+    minRequiredWei
+  );
+  
+  log("=".repeat(60));
+  log("Starting alternating wallet transactions...");
+  log("=".repeat(60));
 
   while (true) {
-    // Generate a new wallet for each transaction
-    const traderAccount = privateKeyToAccount(generatePrivateKey());
-    log(`TX ${i + 1}: Generated new trader wallet:`, traderAccount.address);
-    log(
-      "⚠️ Private key:",
-      traderAccount?.privateKey ?? "(unavailable)",
-      "(do not share)"
-    );
-
-    // Create wallet client for this transaction
-    const traderWallet = createWalletClient({
-      account: traderAccount,
-      chain: bsc,
-      transport: http(RPC_URL),
-    });
-
+    // Select wallet based on alternating pattern
+    let currentWallet = useWallet1 ? wallet1 : wallet2;
+    let walletNumber = useWallet1 ? 1 : 2;
+    let walletAddress = useWallet1 ? wallet1Account.address : wallet2Account.address;
+    
+    // Check balance of scheduled wallet before transaction
     const stakeWei = computeStakeWei();
+    const gasPrice = await publicClient.getGasPrice();
+    const estimatedGas = 400_000n;
+    const gasCost = gasPrice * estimatedGas;
+    const gasBuffer = (gasCost * 10n) / 100n;
+    const requiredWei = stakeWei + gasCost + gasBuffer;
+    
+    const balance = await publicClient.getBalance({ address: walletAddress });
+    const balanceBNB = Number(balance) / 1e18;
+    
+    log(`TX ${i + 1}: Checking Wallet ${walletNumber} (${walletAddress})`);
+    log(`  Current balance: ${balanceBNB.toFixed(6)} BNB`);
+    log(`  Required: ${(Number(requiredWei) / 1e18).toFixed(6)} BNB`);
+    
+    // If scheduled wallet doesn't have enough, check the other wallet
+    if (balance < requiredWei) {
+      const otherWallet = useWallet1 ? wallet2 : wallet1;
+      const otherWalletNumber = useWallet1 ? 2 : 1;
+      const otherWalletAddress = useWallet1 ? wallet2Account.address : wallet1Account.address;
+      const otherBalance = await publicClient.getBalance({ address: otherWalletAddress });
+      const otherBalanceBNB = Number(otherBalance) / 1e18;
+      
+      log(`  ⚠️  Insufficient balance. Checking Wallet ${otherWalletNumber}...`);
+      log(`  Wallet ${otherWalletNumber} balance: ${otherBalanceBNB.toFixed(6)} BNB`);
+      
+      if (otherBalance >= requiredWei) {
+        log(`  ✅ Using Wallet ${otherWalletNumber} instead (has sufficient balance)`);
+        currentWallet = otherWallet;
+        walletNumber = otherWalletNumber;
+        walletAddress = otherWalletAddress;
+      } else {
+        log(`  ⚠️  Wallet ${otherWalletNumber} also insufficient. Funding Wallet ${walletNumber}...`);
+        await ensureFunding(walletAddress, requiredWei);
+      }
+    } else {
+      log(`  ✅ Wallet ${walletNumber} has sufficient balance`);
+    }
+
     const isLong = Math.random() < 0.5; // random long or short
-    await tradeOnce(traderWallet, stakeWei, isLong, i);
+    await tradeOnce(currentWallet, stakeWei, isLong, i);
 
     i += 1;
 
-    // Jitter the interval so trades are at random times, approximately 1 per hour
-    const jitterFactor = 0.5 + Math.random(); // 0.5x to 1.5x
-    const intervalMs = baseIntervalMs * jitterFactor;
-    log(`Sleeping ${(intervalMs / 1000).toFixed(0)} seconds before next tx...`);
-    await sleep(intervalMs);
+    // Switch to the other wallet for next transaction
+    useWallet1 = !useWallet1;
+
+    // Sleep for exactly 1 hour (no jitter to maintain consistent hourly schedule)
+    log(`Sleeping ${(baseIntervalMs / 1000).toFixed(0)} seconds before next tx (will use Wallet ${useWallet1 ? 1 : 2})...`);
+    await sleep(baseIntervalMs);
   }
 }
 
