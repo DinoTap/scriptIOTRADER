@@ -260,6 +260,8 @@ async function main() {
     "Wallet 2",
     minRequiredWei
   );
+
+  
   
   log("=".repeat(60));
   log("Starting alternating wallet transactions...");
