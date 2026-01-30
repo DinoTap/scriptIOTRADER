@@ -6,7 +6,8 @@
   "description": "Standalone runner for IOTrader long/short automation",
   "main": "autoTrade.js",
   "scripts": {
-    "trade": "node autoTrade.js"
+    "trade": "node autoTrade.js",
+    "generate-wallets": "node generateWallets.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
