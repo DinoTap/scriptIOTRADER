@@ -54,25 +54,24 @@ const {
   WALLET1_PRIVATE_KEY,
   WALLET2_PRIVATE_KEY,
   WALLET3_PRIVATE_KEY,
-  WALLET4_PRIVATE_KEY,
   ADMIN_PRIVATE_KEY,
   RPC_URL = "https://bsc-dataseed.binance.org",
   TARGET_PRICE = "600", // Example price; set to your desired strike
   DURATION_SECONDS = "3600", // 1 hour
   MIN_BNB_STAKE = "0.0002", // minimum stake in BNB
   MAX_BNB_STAKE = "0.0009", // maximum stake in BNB
-  TX_INTERVAL_SECONDS = "3600", // base interval (1 transaction per hour)
+  TX_INTERVAL_SECONDS = "8640", // 1 day / 10 txs ≈ 8640 sec between txs
+  MAX_TRANSACTIONS = "10",
 } = process.env;
 
 const WALLET_KEYS = [
   WALLET1_PRIVATE_KEY,
   WALLET2_PRIVATE_KEY,
   WALLET3_PRIVATE_KEY,
-  WALLET4_PRIVATE_KEY,
 ];
 
 if (!WALLET_KEYS.every(Boolean)) {
-  throw new Error("Set WALLET1_PRIVATE_KEY, WALLET2_PRIVATE_KEY, WALLET3_PRIVATE_KEY, and WALLET4_PRIVATE_KEY in .env");
+  throw new Error("Set WALLET1_PRIVATE_KEY, WALLET2_PRIVATE_KEY, and WALLET3_PRIVATE_KEY in .env");
 }
 
 if (!ADMIN_PRIVATE_KEY) {
@@ -97,12 +96,12 @@ const adminWallet = createWalletClient({
   transport: http(RPC_URL),
 });
 
-// Create four wallet accounts from private keys
+// Create three wallet accounts from private keys
 const walletAccounts = WALLET_KEYS.map((key) =>
   privateKeyToAccount(`0x${key.replace(/^0x/, "")}`)
 );
 
-// Create wallet clients for all four wallets
+// Create wallet clients for all three wallets
 const wallets = walletAccounts.map((account) =>
   createWalletClient({
     account,
@@ -230,11 +229,12 @@ async function tradeOnce(traderWallet, stakeWei, isLong, index) {
 }
 
 async function main() {
-  // Execute trades continuously forever, cycling through 4 wallets every hour
+  // Execute up to MAX_TRANSACTIONS over one day, cycling through 3 wallets
   const baseIntervalMs = Number(TX_INTERVAL_SECONDS) * 1000;
-  const numWallets = 4;
+  const maxTransactions = Number(MAX_TRANSACTIONS) || 10;
+  const numWallets = 3;
   let i = 0;
-  let walletIndex = 0; // 0-3, cycles 1 -> 2 -> 3 -> 4 -> 1 -> ...
+  let walletIndex = 0; // 0-2, cycles 1 -> 2 -> 3 -> 1 -> ...
 
   walletAccounts.forEach((acc, idx) => {
     log(`Wallet ${idx + 1} address: ${acc.address}`);
@@ -253,7 +253,7 @@ async function main() {
   log(`Checking wallet balances (minimum required: ${minRequiredBNB.toFixed(6)} BNB)...`);
   log("=".repeat(60));
 
-  // Check and fund all four wallets at startup
+  // Check and fund all three wallets at startup
   for (let w = 0; w < numWallets; w++) {
     await checkAndFundWallet(
       walletAccounts[w].address,
@@ -263,10 +263,15 @@ async function main() {
   }
 
   log("=".repeat(60));
-  log("Starting cycling wallet transactions (1 -> 2 -> 3 -> 4 -> 1 -> ...)...");
+  log(`Repeating every 24h: ${maxTransactions} transactions per day (3 wallets, 1 -> 2 -> 3 -> 1 -> ...)...`);
   log("=".repeat(60));
 
   while (true) {
+    if (i >= maxTransactions) {
+      log(`Completed ${maxTransactions} transactions for this cycle. Starting next 24h cycle...`);
+      i = 0;
+      walletIndex = 0;
+    }
     // Select wallet based on current index (1-based number for logs)
     let currentWallet = wallets[walletIndex];
     let walletNumber = walletIndex + 1;
@@ -327,7 +332,7 @@ async function main() {
 
     i += 1;
 
-    // Cycle to next wallet (1 -> 2 -> 3 -> 4 -> 1 -> ...)
+    // Cycle to next wallet (1 -> 2 -> 3 -> 1 -> ...)
     walletIndex = (walletIndex + 1) % numWallets;
     const nextWalletNumber = walletIndex + 1;
 
